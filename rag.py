@@ -15,6 +15,7 @@ from ibm_watsonx_ai.metanames import EmbedTextParamsMetaNames
 from ibm_watsonx_ai import Credentials
 from ibm_watsonx_ai import APIClient
 
+from langchain_community.document_loaders import TextLoader
 from langchain_ibm import WatsonxLLM, WatsonxEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
@@ -86,4 +87,33 @@ watsonx_embedding = WatsonxEmbeddings(
 query = "How are you?"
 
 print(watsonx_embedding.embed_query(query))
+
+#%%
+
+loader = TextLoader("new-Policies.txt")
+data = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=100,
+    chunk_overlap=20,
+    length_function=len,
+)
+
+chunks = text_splitter.split_documents(data)
+
 # %%
+ids = [str(i) for i in range(0, len(chunks))]
+vectordb = Chroma.from_documents(chunks, watsonx_embedding, ids=ids)
+
+query = "Smoking policy"
+docs = vectordb.similarity_search(query)
+print(docs)
+
+#%%
+query = "Email policy"
+
+retriever = vectordb.as_retriever(search_kwargs={"k": 1})
+docs = retriever.invoke(query)
+
+#%%
+
