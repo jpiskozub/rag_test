@@ -1,11 +1,11 @@
 #%%
 #IMPORTS
 from pprint import pprint
-import json
-from pathlib import Path
-import nltk
+
 import re
 import os
+import gradio as gr
+
 
 
 
@@ -116,4 +116,42 @@ retriever = vectordb.as_retriever(search_kwargs={"k": 1})
 docs = retriever.invoke(query)
 
 #%%
+model_id = 'mistralai/mixtral-8x7b-instruct-v01'
+llm_parameters = {
+    GenParams.MAX_NEW_TOKENS: 256,
+    GenParams.TEMPERATURE: 0.5,
+}
+watsonx_llm = WatsonxLLM(
+    model_id=model_id,
+    url="https://eu-de.ml.cloud.ibm.com",
+    project_id="bf575760-1fc7-46cf-9066-5a14330dd45b",
+    params=llm_parameters,
+)
 
+#%%
+
+
+## QA Chain
+def retriever_qa(file, query):
+    llm = watsonx_llm
+    qa = RetrievalQA.from_chain_type(llm=llm, 
+                                    chain_type="stuff", 
+                                    retriever=retriever, 
+                                    return_source_documents=False)
+    response = qa.invoke(query)
+    return response['result']
+
+#%%
+rag_application = gr.Interface(
+    fn=retriever_qa,
+    allow_flagging="never",
+    inputs=[
+        gr.File(label="Upload PDF File", file_count="single", file_types=['.pdf'], type="filepath"),  # Drag and drop file upload
+        gr.Textbox(label="Input Query", lines=2, placeholder="Type your question here...")
+    ],
+    outputs=gr.Textbox(label="Output"),
+    title="RAG Chatbot",
+    description="Upload a PDF document and ask any question. The chatbot will try to answer using the provided document."
+)
+# Launch the app
+rag_application.launch(server_name="0.0.0.0", server_port= 7860)
