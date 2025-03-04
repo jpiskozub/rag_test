@@ -5,20 +5,21 @@ import json
 from pathlib import Path
 import nltk
 import re
+import os
 
 
 
-from langchain_community.document_loaders import TextLoader
+from ibm_watsonx_ai.foundation_models import ModelInference
+from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
+from ibm_watsonx_ai.metanames import EmbedTextParamsMetaNames
+from ibm_watsonx_ai import Credentials
+from ibm_watsonx_ai import APIClient
+
+from langchain_ibm import WatsonxLLM, WatsonxEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_community.document_loaders import UnstructuredMarkdownLoader
-from langchain_community.document_loaders import JSONLoader
-from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain_community.document_loaders.csv_loader import UnstructuredCSVLoader
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_community.document_loaders import Docx2txtLoader
-from langchain_community.document_loaders import UnstructuredFileLoader
-
+from langchain.chains import RetrievalQA
 
 # %%
 pdf_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/Q81D33CdRLK6LswuQrANQQ/instructlab.pdf"
@@ -67,3 +68,22 @@ for i in range(1, len(sections), 2):
 
 pprint(parsed_sections)
 
+
+
+#%%
+embed_params = {
+    EmbedTextParamsMetaNames.TRUNCATE_INPUT_TOKENS: 3,
+    EmbedTextParamsMetaNames.RETURN_OPTIONS: {"input_text": True},
+}
+
+watsonx_embedding = WatsonxEmbeddings(
+    model_id="ibm/slate-125m-english-rtrvr",
+    url="https://eu-de.ml.cloud.ibm.com",
+    project_id="bf575760-1fc7-46cf-9066-5a14330dd45b",
+    params=embed_params,
+)
+# %%
+query = "How are you?"
+
+print(watsonx_embedding.embed_query(query))
+# %%
