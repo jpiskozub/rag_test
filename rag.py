@@ -29,6 +29,8 @@ loader = PyPDFLoader(pdf_url)
 
 pages = loader.load_and_split()
 
+print(pages[0].page_content[:1000])
+
 #%%
 latex_text = r"""
 \documentclass{article}
@@ -106,14 +108,15 @@ ids = [str(i) for i in range(0, len(chunks))]
 vectordb = Chroma.from_documents(chunks, watsonx_embedding, ids=ids)
 
 query = "Smoking policy"
-docs = vectordb.similarity_search(query)
+docs = vectordb.similarity_search(query, k=5)
 print(docs)
 
 #%%
 query = "Email policy"
 
-retriever = vectordb.as_retriever(search_kwargs={"k": 1})
+retriever = vectordb.as_retriever(search_kwargs={"k": 2})
 docs = retriever.invoke(query)
+print(docs)
 
 #%%
 model_id = 'mistralai/mixtral-8x7b-instruct-v01'
